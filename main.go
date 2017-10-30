@@ -1,13 +1,15 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/volume"
+
+	"fmt"
 	"log"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"os"
 )
 
 const (
@@ -57,4 +59,28 @@ func LookupFileSystemType(path string) string {
 
 	fstype := strings.Split(string(out), "\n")[1]
 	return fstype
+}
+
+func EnvironmentConfiguration() {
+	path := os.Getenv("DEFAULT_PATH")
+
+	if(len(defaultPath) > 0 ) {
+		defaultPath = path
+	}
+
+	logLevel := os.Getenv("LOG_LEVEL")
+
+	switch logLevel {
+	case "3":
+		logrus.SetLevel(logrus.DebugLevel)
+		break;
+	case "2":
+		logrus.SetLevel(logrus.InfoLevel)
+		break;
+	case "1":
+		logrus.SetLevel(logrus.WarnLevel)
+		break;
+	default:
+		logrus.SetLevel(logrus.ErrorLevel)
+	}
 }
