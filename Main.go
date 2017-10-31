@@ -31,6 +31,8 @@ func main() {
 		fmt.Println("   LAO VOWEL SIGN AA າ ຳ")
 	}
 
+	EnvironmentConfiguration()
+
 	var setup = func() {
 		fmt.Printf("Path %s\n", defaultPath)
 	}
