@@ -6,7 +6,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/volume"
-	"fmt"
 	"errors"
 	"os"
 )
@@ -23,11 +22,13 @@ type cephFSDriver struct { volume.Driver
 /**
 
  */
-func newCephFSDriver( defaultPath  string, monitor string) (cephFSDriver, error) {
+func newCephFSDriver( defaultPath  string, monitor string, user string, secretfile string) (cephFSDriver, error) {
 	return cephFSDriver{
 		defaultPath: defaultPath,
 		volumes:	nil,
 		monitor: 	monitor,
+		user: 		user,
+		secretfile: secretfile,
 	}, nil
 }
 

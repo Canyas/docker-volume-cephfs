@@ -19,6 +19,9 @@ const (
 
 var (
 	defaultPath = filepath.Join(volume.DefaultDockerRootDirectory, cephfsId)
+	monitor = ""
+	user = "admin.clinet"
+	secretfile = "/etc/ceph/admin.secret"
 )
 
 func main() {
@@ -40,7 +43,7 @@ func main() {
 		log.Print("Warning CePH filesystem not found at ", defaultPath, " found ", fstype)
 	}
 
-	driver, err := newCephFSDriver(defaultPath)
+	driver, err := newCephFSDriver(defaultPath, monitor, user, secretfile)
 	if err != nil {
 		return
 	}
@@ -63,6 +66,9 @@ func LookupFileSystemType(path string) string {
 
 func EnvironmentConfiguration() {
 	path := os.Getenv("DEFAULT_PATH")
+	monitor = os.Getenv("DEFAULT_MONITOR")
+	user = os.Getenv("CEPH_USER")
+	secretfile = os.Getenv("CEPH_SECRETFILE")
 
 	if(len(defaultPath) > 0 ) {
 		defaultPath = path
