@@ -239,26 +239,59 @@ func (d cephFSDriver ) Mount( r volume.MountRequest ) (*volume.MountResponse, er
 	logrus.Info("Mount Called ",r.ID," ", r.Name)
 	defer logrus.Info("Mount End")
 
-	//TODO: Get volume by name
+	logrus.Info("Getting volume by name ...")
+	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return nil, err
+	}
 
-	//TODO: Mount volume
+	vol := vols.ByName(r.Name)
+	if(vol == nil) {
+		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		logrus.Error(err.Error())
+		return nil, err
+	}
 
-	m := fmt.Sprintf("%s/%s",d.defaultPath, r.Name)
-	if( ! utils.IsDirectory(m) ) {
-		return nil, errors.New(fmt.Sprintf(" %s is not a directory ", m))
-	};
-	return &volume.MountResponse{ Mountpoint: m}, nil
+	logrus.Info("Mounting ceph volume ...")
+	// Mount volume
+	err = vol.Mount(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
+	return &volume.MountResponse{ Mountpoint: vol.Filesystem.Path+vol.Subpath}, nil
 }
 
 func (d cephFSDriver ) Unmount( r volume.UnmountRequest ) error {
 	logrus.Info("Unmount Called ", r.ID, " ", r.Name)
 	defer logrus.Info("Unmount End")
 
-	//TODO: Get volume by name
+	// Get volume by name
+	logrus.Info("Getting volume by name ...")
+	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return err
+	}
 
-	//TODO: Unmount volume
+	vol := vols.ByName(r.Name)
+	if(vol == nil) {
+		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		logrus.Error(err.Error())
+		return err
+	}
 
-	return errors.New("error NIJ")
+	logrus.Info("Unmount volume ...")
+	// Unmount volume
+	err = vol.Unmount()
+	if (err != nil) {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	return nil
 }
 func (d cephFSDriver ) Capabilities() *volume.CapabilitiesResponse {
 	logrus.Info("Capabilities Called")
