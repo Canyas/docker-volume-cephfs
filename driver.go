@@ -177,7 +177,7 @@ func( d cephFSDriver ) Get( r volume.GetRequest ) (*volume.GetResponse, error) {
 		logrus.Error(err.Error())
 		return nil, err
 	}
-	
+
 	vol := vols.ByName(r.Name)
 	if(vol == nil) {
 		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
@@ -211,15 +211,27 @@ func( d cephFSDriver ) Remove( r volume.RemoveRequest ) error {
 	return errors.New("error Remove NIJ")
 }
 
-func( d cephFSDriver ) Path( r volume.PathRequest ) (volume.PathResponse, error) {
+func( d cephFSDriver ) Path( r volume.PathRequest ) (*volume.PathResponse, error) {
 	logrus.Info("Path Called ", r.Name)
 	defer logrus.Info("Path End")
 
-	//TODO: Get ceph volume by name
+	logrus.Info("Getting volume by name ...")
+	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return nil, err
+	}
 
-	//TODO: Gen mountpoint
+	vol := vols.ByName(r.Name)
+	if(vol == nil) {
+		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		logrus.Error(err.Error())
+		return nil, err
+	}
 	
-	return volume.PathResponse{}, nil
+	return &volume.PathResponse{
+		Mountpoint: vol.Filesystem.Path+vol.Subpath,
+	}, nil
 }
 
 
