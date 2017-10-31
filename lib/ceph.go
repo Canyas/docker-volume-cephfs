@@ -79,7 +79,7 @@ func (v Volume) Mount(monitor string, user string, secretfile string) error {
 }
 
 func (v Volume) Unmount() error {
-	out, err := ShWithDefaultTimeout("umount", v.Filesystem.Path, v.Subpath)
+	out, err := ShWithDefaultTimeout("umount", v.Filesystem.Path)
 	if(err != nil) {
 		err = InternalError(errors.New(out))
 		return err
