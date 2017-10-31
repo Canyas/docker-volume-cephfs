@@ -144,7 +144,7 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 
 	logrus.Info("Getting volume list ....")
 	// Get volumes
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -172,7 +172,7 @@ func( d cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error) 
 	defer logrus.Info("Get End")
 
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -216,7 +216,7 @@ func( d cephFSDriver ) Path( r *volume.PathRequest ) (*volume.PathResponse, erro
 	defer logrus.Info("Path End")
 
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -240,7 +240,7 @@ func (d cephFSDriver ) Mount( r *volume.MountRequest ) (*volume.MountResponse, e
 	defer logrus.Info("Mount End")
 
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -270,7 +270,7 @@ func (d cephFSDriver ) Unmount( r *volume.UnmountRequest ) error {
 
 	// Get volume by name
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return err

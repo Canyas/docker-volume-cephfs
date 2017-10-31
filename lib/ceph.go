@@ -88,7 +88,7 @@ func (v Volume) Unmount() error {
 }
 
 func (fs Filesystem) Exists() (bool, error) {
-	fss, err := GetCephFilesystems()
+	fss, err := GetCephFilesystems("")
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return false, err
@@ -104,10 +104,10 @@ func (fs Filesystem) Exists() (bool, error) {
 	return false, nil
 }
 
-func GetVolumes(monitor string, user string, secretfile string) (VolumeList, error) {
+func GetVolumes(monitor string, user string, secretfile string, path string) (VolumeList, error) {
 	var vols []Volume
 
-	fss, err := GetCephFilesystems()
+	fss, err := GetCephFilesystems(path)
 	if(err != nil) {
 		return nil, err
 	}

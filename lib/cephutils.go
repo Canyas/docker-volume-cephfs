@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-func GetCephFilesystems() ([]Filesystem, error) {
+func GetCephFilesystems(path string) ([]Filesystem, error) {
 	// Check if ceph filesystem already exists
 	out, err := ShWithDefaultTimeout("ceph", "fs", "ls")
 	if(err != nil) {
@@ -23,6 +23,7 @@ func GetCephFilesystems() ([]Filesystem, error) {
 
 		existingFs = append(existingFs, Filesystem{})
 		index = len(existingFs)-1
+		existingFs[index].Path = path
 		for _, property := range properties {
 			value := strings.Split(property, ": ")
 			if(len(value) != 2) {
