@@ -1,20 +1,18 @@
-package utils
+package lib
 
 import (
-	cephfs "../cephfs"
-
 	"strings"
 	"errors"
 )
 
-func GetCephFilesystems() ([]cephfs.Filesystem, error) {
+func GetCephFilesystems() ([]Filesystem, error) {
 	// Check if ceph filesystem already exists
 	out, err := ShWithDefaultTimeout("ceph", "fs", "ls")
 	if(err != nil) {
 		return nil, errors.New(REQUEST_LIST_ERROR + err.Error())
 	}
 
-	var existingFs []cephfs.Filesystem
+	var existingFs []Filesystem
 	var index			int
 	filesystems := strings.Split(out, "\n")
 	for _, element := range filesystems {
@@ -23,7 +21,7 @@ func GetCephFilesystems() ([]cephfs.Filesystem, error) {
 			return nil, InternalError(errors.New(PROCESSING_LIST_ERROR))
 		}
 
-		existingFs = append(existingFs, cephfs.Filesystem{})
+		existingFs = append(existingFs, Filesystem{})
 		index = len(existingFs)-1
 		for _, property := range properties {
 			value := strings.Split(property, ": ")

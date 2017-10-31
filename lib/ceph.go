@@ -1,8 +1,6 @@
-package cephfs
+package lib
 
 import (
-	utils "../utils"
-
 	"github.com/Sirupsen/logrus"
 
 	"fmt"
@@ -36,16 +34,16 @@ func NewFilesystem(name 		string,
 		MetaPool: metaPool,
 	}
 
-	exists, err := utils.ExistsCephPools(fs.MetaPool, fs.DataPool)
+	exists, err := ExistsCephPools(fs.MetaPool, fs.DataPool)
 	if(err != nil) {
 		return nil, err
 	} else if(!exists) {
-		return nil, errors.New(utils.MISSING_POOL)
+		return nil, errors.New(MISSING_POOL)
 	}
 
-	out, err := utils.ShWithDefaultTimeout("ceph", "fs", "new", fs.Name, fs.MetaPool, fs.DataPool)
+	out, err := ShWithDefaultTimeout("ceph", "fs", "new", fs.Name, fs.MetaPool, fs.DataPool)
 	if(err != nil) {
-		err = utils.InternalError(errors.New(out))
+		err = InternalError(errors.New(out))
 		return nil, err
 	}
 
@@ -55,7 +53,7 @@ func NewFilesystem(name 		string,
 	}
 
 	if(!exists) {
-		return nil, utils.InternalError(errors.New(utils.MISSING_FILESYSTEM))
+		return nil, InternalError(errors.New(MISSING_FILESYSTEM))
 	}
 
 	return &fs, nil
@@ -66,14 +64,14 @@ func ( v Volume) GetAbsolutePathForVolume() string {
 }
 
 func (v Volume) Mount(monitor string, user string, secretfile string) error {
-	out, err := utils.ShWithDefaultTimeout("mount", "-t",
+	out, err := ShWithDefaultTimeout("mount", "-t",
 																"ceph",
 																monitor+":"+v.Subpath,
 																v.Filesystem.Path,
 																"-o",
 																"name="+user+",secretfile="+secretfile)
 	if(err != nil) {
-		err = utils.InternalError(errors.New(out))
+		err = InternalError(errors.New(out))
 		return err
 	}
 
@@ -81,16 +79,16 @@ func (v Volume) Mount(monitor string, user string, secretfile string) error {
 }
 
 func (v Volume) Unmount() error {
-	out, err := utils.ShWithDefaultTimeout("unmount", v.Filesystem.Path, v.Subpath)
+	out, err := ShWithDefaultTimeout("unmount", v.Filesystem.Path, v.Subpath)
 	if(err != nil) {
-		err = utils.InternalError(errors.New(out))
+		err = InternalError(errors.New(out))
 		return err
 	}
 	return nil
 }
 
 func (fs Filesystem) Exists() (bool, error) {
-	fss, err := utils.GetCephFilesystems()
+	fss, err := GetCephFilesystems()
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return false, err
@@ -109,7 +107,7 @@ func (fs Filesystem) Exists() (bool, error) {
 func GetVolumes(monitor string, user string, secretfile string) (VolumeList, error) {
 	var vols []Volume
 
-	fss, err := utils.GetCephFilesystems()
+	fss, err := GetCephFilesystems()
 	if(err != nil) {
 		return nil, err
 	}
@@ -141,15 +139,15 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 		return nil, err
 	}
 
-	out, err := utils.ShWithDefaultTimeout("ls", "-1")
+	out, err := ShWithDefaultTimeout("ls", "-1")
 	if(err != nil) {
-		err = utils.InternalError(errors.New(utils.UNABLE_GET_VOLUMES+out))
+		err = InternalError(errors.New(UNABLE_GET_VOLUMES+out))
 		return nil, err
 	}
 
 	lines := strings.Split(out, "\n")
 	for _, line := range lines {
-		if(utils.IsDirectory(fs.Path+"/"+line)) {
+		if(IsDirectory(fs.Path+"/"+line)) {
 			vols = append(vols, Volume{
 				Name: line,
 				Subpath: "/"+line,

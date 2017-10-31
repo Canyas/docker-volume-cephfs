@@ -1,8 +1,7 @@
 package main
 
 import (
-	utils 	"./utils"
-	cephfs	"./cephfs"
+	lib "./lib"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/volume"
@@ -13,7 +12,7 @@ import (
 
 type cephFSDriver struct { volume.Driver
 	defaultPath	string
-	volumes		map[string]*cephfs.Volume
+	volumes		map[string]*lib.Volume
 	monitor 	string
 	user 		string
 	secretfile	string
@@ -36,7 +35,7 @@ func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
 	logrus.Info("--- Create Called ", r.Name, " ", r.Options)
 	defer logrus.Info("--- Create End")
 
-	cvol := &cephfs.Volume{
+	cvol := &lib.Volume{
 		Name:		r.Name,
 		Subpath:	nil,
 	}
@@ -61,7 +60,7 @@ func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
 	// Validate required options
 	if(len(cvol.Filesystem.Name) == 0) {
 		//Required options must be set
-		return errors.New(utils.REQUIRED_OPTIONS)
+		return errors.New(lib.REQUIRED_OPTIONS)
 	}
 
 	// Process empty options
@@ -82,12 +81,12 @@ func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
 		// Create new filesystem if it doesn't exist
 		// Validate if all options are set to create a new filesystem
 		if (len(cvol.Filesystem.DataPool) == 0 || len(cvol.Filesystem.MetaPool) == 0) {
-			err := errors.New(utils.MISSING_POOL_OPTION)
+			err := errors.New(lib.MISSING_POOL_OPTION)
 			logrus.Error(err.Error())
 			return err
 		}
 
-		_, err = cephfs.NewFilesystem(cvol.Filesystem.Name,
+		_, err = lib.NewFilesystem(cvol.Filesystem.Name,
 										cvol.Filesystem.Path,
 										cvol.Filesystem.DataPool,
 										cvol.Filesystem.MetaPool)
@@ -100,7 +99,7 @@ func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
 
 	logrus.Info("Mounting filesystem ...")
 	// Mount filesystem
-	fsvol := cephfs.Volume{
+	fsvol := lib.Volume{
 		Name: "root",
 		Subpath: "/",
 		Filesystem: cvol.Filesystem,
@@ -110,11 +109,11 @@ func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
 	logrus.Info("Checking volume ...")
 	// Check if volume already exists
 	// Create new volume if it doesn't exist
-	if(!utils.IsDirectory(cvol.Filesystem.Path+cvol.Subpath)) {
+	if(!lib.IsDirectory(cvol.Filesystem.Path+cvol.Subpath)) {
 		logrus.Info("Creating new volume ...")
 		err = os.MkdirAll(cvol.Filesystem.Path+cvol.Subpath, os.ModePerm)
 		if(err != nil) {
-			err = errors.New(utils.UNABLE_CREATE_DIR+err.Error())
+			err = errors.New(lib.UNABLE_CREATE_DIR+err.Error())
 			logrus.Error(err.Error())
 			return err
 		}
@@ -145,7 +144,7 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 
 	logrus.Info("Getting volume list ....")
 	// Get volumes
-	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -173,7 +172,7 @@ func( d cephFSDriver ) Get( r volume.GetRequest ) (*volume.GetResponse, error) {
 	defer logrus.Info("Get End")
 
 	logrus.Info("Getting volume by name ...")
-	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -181,7 +180,7 @@ func( d cephFSDriver ) Get( r volume.GetRequest ) (*volume.GetResponse, error) {
 
 	vol := vols.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
@@ -217,7 +216,7 @@ func( d cephFSDriver ) Path( r volume.PathRequest ) (*volume.PathResponse, error
 	defer logrus.Info("Path End")
 
 	logrus.Info("Getting volume by name ...")
-	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -225,7 +224,7 @@ func( d cephFSDriver ) Path( r volume.PathRequest ) (*volume.PathResponse, error
 
 	vol := vols.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
@@ -241,7 +240,7 @@ func (d cephFSDriver ) Mount( r volume.MountRequest ) (*volume.MountResponse, er
 	defer logrus.Info("Mount End")
 
 	logrus.Info("Getting volume by name ...")
-	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -249,7 +248,7 @@ func (d cephFSDriver ) Mount( r volume.MountRequest ) (*volume.MountResponse, er
 
 	vol := vols.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
@@ -271,7 +270,7 @@ func (d cephFSDriver ) Unmount( r volume.UnmountRequest ) error {
 
 	// Get volume by name
 	logrus.Info("Getting volume by name ...")
-	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return err
@@ -279,7 +278,7 @@ func (d cephFSDriver ) Unmount( r volume.UnmountRequest ) error {
 
 	vol := vols.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return err
 	}
