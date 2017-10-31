@@ -37,7 +37,7 @@ func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
 
 	cvol := &lib.Volume{
 		Name:		r.Name,
-		Subpath:	nil,
+		Subpath:	"",
 	}
 
 	logrus.Info("Processing options ...")
