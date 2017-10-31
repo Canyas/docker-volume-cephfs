@@ -21,7 +21,7 @@ var (
 	defaultPath = filepath.Join(volume.DefaultDockerRootDirectory, cephfsId)
 	monitor = ""
 	user = "admin.clinet"
-	secretfile = "/etc/ceph/admin.secret"
+	secretfile = "/etc/ceph/admin.secretfile"
 )
 
 func main() {
