@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"os"
-	"github.com/hashicorp/consul/logger"
 )
 
 const (

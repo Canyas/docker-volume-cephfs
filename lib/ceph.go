@@ -156,6 +156,11 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 		}
 	}
 
+	err = vol.Unmount()
+	if(err != nil) {
+		return nil, err
+	}
+
 	return vols, nil
 }
 
