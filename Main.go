@@ -10,11 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 	"os"
+	"github.com/hashicorp/consul/logger"
 )
 
 const (
 	cephfsId      = "_cephfs"
 	socketAddress = "/run/docker/plugins/cephfs.sock"
+	logfile		  = "/var/log/docker-volume-cephfs.log"
 )
 
 var (
@@ -31,6 +33,13 @@ func main() {
 		fmt.Println("   LAO VOWEL SIGN AA າ ຳ")
 	}
 
+
+	file, err := setupLogging()
+	if(err != nil) {
+		fmt.Println("Logging not possible.")
+	} else {
+		defer shutdownLogging(file)
+	}
 	EnvironmentConfiguration()
 
 	var setup = func() {
@@ -90,5 +99,38 @@ func EnvironmentConfiguration() {
 		break;
 	default:
 		logrus.SetLevel(logrus.ErrorLevel)
+	}
+}
+
+// setupLogging attempts to log to a file, otherwise stderr
+func setupLogging() (*os.File, error) {
+	// use date, time and filename for log output
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetPrefix("docker-volume-cephfs")
+
+	// setup logfile - path is set from logfileDir and pluginName
+	logFile, err := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+	// check if we can write to directory - otherwise just log to stderr?
+		if os.IsPermission(err) {
+			log.Printf("WARN: logging fallback to STDERR: %v", err)
+		} else {
+			// some other, more extreme system error
+			return nil, err
+		}
+	} else {
+		logrus.Info(fmt.Sprintf("INFO: setting log file: %s", logfile))
+		log.SetOutput(logFile)
+		return logFile, nil
+	}
+	return nil, nil
+}
+
+func shutdownLogging(logFile *os.File) {
+	// flush and close the file
+	if logFile != nil {
+		log.Println("INFO: closing log file")
+		logFile.Sync()
+		logFile.Close()
 	}
 }
