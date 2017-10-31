@@ -14,6 +14,7 @@ const (
 
 	UNABLE_CREATE_DIR = "Unable to create volume directory. Error: "
 	UNABLE_GET_VOLUMES = "Unable to list all volumes. Error: "
+	UNABLE_FIND_VOLUME = "Unable to find the volume. Name: "
 
 	REQUEST_LIST_ERROR = "Unable to request ceph volumes: "
 	PROCESSING_LIST_ERROR = "Unable to convert output from command \"ceph fs ls\"."

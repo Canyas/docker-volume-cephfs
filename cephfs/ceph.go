@@ -16,6 +16,8 @@ type Volume struct {
 	Filesystem	Filesystem
 }
 
+type VolumeList []Volume
+
 type Filesystem struct {
 	Name 		string
 	Path 		string
@@ -104,7 +106,7 @@ func (fs Filesystem) Exists() (bool, error) {
 	return false, nil
 }
 
-func GetVolumes(monitor string, user string, secretfile string) ([]Volume, error) {
+func GetVolumes(monitor string, user string, secretfile string) (VolumeList, error) {
 	var vols []Volume
 
 	fss, err := utils.GetCephFilesystems()
@@ -126,7 +128,7 @@ func GetVolumes(monitor string, user string, secretfile string) ([]Volume, error
 	return vols, nil
 }
 
-func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) ([]Volume, error) {
+func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) (VolumeList, error) {
 	var vols []Volume
 
 	vol := Volume{
@@ -141,7 +143,7 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 
 	out, err := utils.ShWithDefaultTimeout("ls", "-1")
 	if(err != nil) {
-		err = utils.InternalError(errors.New(utils.UNABLE_GET_VOLUMES+lines))
+		err = utils.InternalError(errors.New(utils.UNABLE_GET_VOLUMES+out))
 		return nil, err
 	}
 
@@ -157,4 +159,13 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 	}
 
 	return vols, nil
+}
+
+func (vols VolumeList) ByName(name string) *Volume {
+	for _, vol := range vols {
+		if(vol.Name == name) {
+			return &vol
+		}
+	}
+	return nil
 }

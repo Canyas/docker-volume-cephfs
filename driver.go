@@ -138,17 +138,19 @@ func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
 	return nil
 }
 
-func( d cephFSDriver ) List() (volume.ListResponse, error) {
+func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	logrus.Info("List Called ")
 	defer logrus.Info("List End")
 
+	logrus.Info("Getting volume list ....")
 	// Get volumes
 	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
-		return volume.ListResponse {}, err
+		return nil, err
 	}
 
+	logrus.Info("Converting volume list ...")
 	var vvols []*volume.Volume
 	// Convert volumes
 	for _, vol := range vols {
@@ -159,7 +161,7 @@ func( d cephFSDriver ) List() (volume.ListResponse, error) {
 								})
 	}
 
-	return volume.ListResponse {
+	return &volume.ListResponse {
 		Volumes: vvols,
 	}, nil
 }
@@ -169,14 +171,23 @@ func( d cephFSDriver ) Get( r volume.GetRequest ) (*volume.GetResponse, error) {
 	logrus.Info("Get Called ", r.Name)
 	defer logrus.Info("Get End")
 
-	//TODO: Get ceph volume by name
-
-	//TODO: Gen mountpoint
-
+	logrus.Info("Getting volume by name ...")
+	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+	
+	vol := vols.ByName(r.Name)
+	if(vol == nil) {
+		err = errors.New(utils.UNABLE_FIND_VOLUME+r.Name)
+		logrus.Error(err.Error())
+		return nil, err
+	}
 
 	return &volume.GetResponse{Volume: &volume.Volume{
-		Name:       r.Name,
-		Mountpoint: nil,
+		Name:       vol.Name,
+		Mountpoint: vol.Filesystem.Path+vol.Subpath,
 		Status:     make(map[string]interface{}),
 	}}, nil
 }
