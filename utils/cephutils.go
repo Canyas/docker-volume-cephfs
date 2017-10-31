@@ -7,24 +7,24 @@ import (
 	"errors"
 )
 
-func GetCephFsVolumes() ([]cephfs.Volume, error) {
+func GetCephFilesystems() ([]cephfs.Filesystem, error) {
 	// Check if ceph filesystem already exists
 	out, err := ShWithDefaultTimeout("ceph", "fs", "ls")
 	if(err != nil) {
 		return nil, errors.New(REQUEST_LIST_ERROR + err.Error())
 	}
 
-	var existingVolumes []cephfs.Volume
+	var existingFs []cephfs.Filesystem
 	var index			int
-	volumes := strings.Split(out, "\n")
-	for _, element := range volumes {
+	filesystems := strings.Split(out, "\n")
+	for _, element := range filesystems {
 		properties := strings.Split(element, ", ")
 		if(len(properties) != 3) {
 			return nil, InternalError(errors.New(PROCESSING_LIST_ERROR))
 		}
 
-		existingVolumes = append(existingVolumes, cephfs.Volume{})
-		index = len(existingVolumes)-1
+		existingFs = append(existingFs, cephfs.Filesystem{})
+		index = len(existingFs)-1
 		for _, property := range properties {
 			value := strings.Split(property, ": ")
 			if(len(value) != 2) {
@@ -33,14 +33,57 @@ func GetCephFsVolumes() ([]cephfs.Volume, error) {
 
 			switch (value[0]) {
 			case "name":
-				existingVolumes[index].Name = value[1]
+				existingFs[index].Name = value[1]
 			case "metapool":
-				existingVolumes[index].MetaPool = value[1]
+				existingFs[index].MetaPool = value[1]
 			case "data pools":
-				existingVolumes[index].DataPool = value[1]
+				existingFs[index].DataPool = value[1]
 			}
 		}
 	}
 
-	return existingVolumes, nil
+	return existingFs, nil
 }
+
+func GetCephPools() ([]string, error) {
+	out, err := ShWithDefaultTimeout("ceph", "osd", "pool", "ls")
+	if(err != nil) {
+		err = errors.New(REQUEST_POOLS_ERROR+err.Error())
+		return nil, err
+	}
+
+	pools := strings.Split(out, "\n")
+	if(len(pools) == 0) {
+		err = errors.New(PROCESSING_POOLS_ERROR)
+		return nil, err
+	}
+
+	return pools, nil
+}
+
+func ExistsCephPools(names... string) (bool, error) {
+	pools, err := GetCephPools()
+	if(err != nil) {
+		return false, err
+	}
+
+	for _, elem := range names {
+		if(!existsCephPool(pools, elem)) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func existsCephPool(pools []string, name string) bool {
+
+	for _, pool := range pools {
+		if(pool == name) {
+			return true
+		}
+	}
+
+	return false
+}
+

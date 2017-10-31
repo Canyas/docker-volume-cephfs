@@ -7,85 +7,133 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/go-plugins-helpers/volume"
 	"fmt"
-	"os"
 	"errors"
+	"os"
 )
 
 
 type cephFSDriver struct { volume.Driver
 	defaultPath	string
 	volumes		map[string]*cephfs.Volume
+	monitor 	string
+	user 		string
+	secretfile	string
 }
 
 /**
 
  */
-func newCephFSDriver( defaultPath  string  ) (cephFSDriver, error) {
+func newCephFSDriver( defaultPath  string, monitor string) (cephFSDriver, error) {
 	return cephFSDriver{
 		defaultPath: defaultPath,
 		volumes:	nil,
+		monitor: 	monitor,
 	}, nil
 }
 
 func (d cephFSDriver ) Create( r volume.CreateRequest ) error {
-	logrus.Info("Create Called ", r.Name, " ", r.Options)
-	defer logrus.Info("Create End")
+	logrus.Info("--- Create Called ", r.Name, " ", r.Options)
+	defer logrus.Info("--- Create End")
 
 	cvol := &cephfs.Volume{
-		Name: 		r.Name,
-		Path: 		nil,
+		Name:		r.Name,
 		Subpath:	nil,
-		DataPool: 	nil,
-		MetaPool: 	nil,
 	}
 
+	logrus.Info("Processing options ...")
 	// Process Options
 	for key, val := range r.Options {
 		switch key {
 			case "datapool":
-				cvol.DataPool = val
+				cvol.Filesystem.DataPool = val
 			case "metapool":
-				cvol.MetaPool = val
-			case "name":
-				cvol.Name = val
+				cvol.Filesystem.MetaPool = val
+			case "fsname":
+				cvol.Filesystem.Name = val
 			case "path":
-				cvol.Path = val
+				cvol.Filesystem.Path = val
 			case "subpath":
 				cvol.Subpath = val
 		}
 	}
 
 	// Validate required options
-	if(len(cvol.Name) == 0) {
+	if(len(cvol.Filesystem.Name) == 0) {
 		//Required options must be set
-		return errors.New("You have to specify all required options. (Required options: name)")
+		return errors.New(utils.REQUIRED_OPTIONS)
 	}
 
 	// Process empty options
-	if(len(cvol.Path) == 0) {
-		cvol.Path = d.defaultPath
+	if(len(cvol.Filesystem.Path) == 0) {
+		cvol.Filesystem.Path = d.defaultPath
 	}
 	if(len(cvol.Subpath) == 0) {
 		cvol.Subpath = cvol.Name
 	}
 
-	volumes, err := utils.GetCephFsVolumes()
+	logrus.Info("Checking filesystem ...")
+	exists, err := cvol.Filesystem.Exists()
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return err
+	} else if (!exists) {
+		logrus.Info("Creating new filesystem ...")
+		// Create new filesystem if it doesn't exist
+		// Validate if all options are set to create a new filesystem
+		if (len(cvol.Filesystem.DataPool) == 0 || len(cvol.Filesystem.MetaPool) == 0) {
+			err := errors.New(utils.MISSING_POOL_OPTION)
+			logrus.Error(err.Error())
+			return err
+		}
+
+		_, err = cephfs.NewFilesystem(cvol.Filesystem.Name,
+										cvol.Filesystem.Path,
+										cvol.Filesystem.DataPool,
+										cvol.Filesystem.MetaPool)
+
+		if(err != nil) {
+			logrus.Error(err.Error())
+			return err
+		}
+	}
+
+	logrus.Info("Mounting filesystem ...")
+	// Mount filesystem
+	fsvol := cephfs.Volume{
+		Name: "root",
+		Subpath: "/",
+		Filesystem: cvol.Filesystem,
+	}
+	fsvol.Mount(d.monitor, d.user, d.secretfile)
+
+	logrus.Info("Checking volume ...")
+	// Check if volume already exists
+	// Create new volume if it doesn't exist
+	if(!utils.IsDirectory(cvol.Filesystem.Path+cvol.Subpath)) {
+		logrus.Info("Creating new volume ...")
+		err = os.MkdirAll(cvol.Filesystem.Path+cvol.Subpath, os.ModePerm)
+		if(err != nil) {
+			err = errors.New(utils.UNABLE_CREATE_DIR+err.Error())
+			logrus.Error(err.Error())
+			return err
+		}
+	}
+
+	logrus.Info("Unmounting filesystem ...")
+	// Unmount Filesystem
+	err = fsvol.Unmount()
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return err
 	}
 
-	//TODO: Check if filesystem already exists
-
-	//TODO: Create new filesystem if it doesn't exist
-
-	//TODO: Mount filesystem
-
-	//TODO: Check if volume already exists
-
-	//TODO: Create new volume if it doesn't exist
-
-	//TODO: Mount Volume
+	logrus.Info("Mounting volume ...")
+	// Mount Volume
+	err = cvol.Mount(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return err
+	}
 
 	return nil
 }
@@ -94,9 +142,26 @@ func( d cephFSDriver ) List() (volume.ListResponse, error) {
 	logrus.Info("List Called ")
 	defer logrus.Info("List End")
 
-	//TODO: Convert volumes
+	// Get volumes
+	vols, err := cephfs.GetVolumes(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return volume.ListResponse {}, err
+	}
 
-	return volume.ListResponse {}, nil
+	var vvols []*volume.Volume
+	// Convert volumes
+	for _, vol := range vols {
+		vvols = append(vvols, &volume.Volume{
+									Name: vol.Name,
+									Mountpoint: vol.Filesystem.Path+vol.Subpath,
+									Status: nil,
+								})
+	}
+
+	return volume.ListResponse {
+		Volumes: vvols,
+	}, nil
 }
 
 
@@ -156,7 +221,7 @@ func (d cephFSDriver ) Mount( r volume.MountRequest ) (*volume.MountResponse, er
 	//TODO: Mount volume
 
 	m := fmt.Sprintf("%s/%s",d.defaultPath, r.Name)
-	if( ! IsDirectory(m) ) {
+	if( ! utils.IsDirectory(m) ) {
 		return nil, errors.New(fmt.Sprintf(" %s is not a directory ", m))
 	};
 	return &volume.MountResponse{ Mountpoint: m}, nil
@@ -181,12 +246,4 @@ func (d cephFSDriver ) Capabilities() *volume.CapabilitiesResponse {
 			Scope: "global",
 		},
 	}
-}
-
-func IsDirectory(path string) bool {
-	fileInfo, err := os.Stat(path);
-	if  err != nil {
-		return false
-	}
-	return fileInfo.IsDir()
 }
