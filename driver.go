@@ -158,7 +158,7 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	var vvols []*volume.Volume
 	// Convert volumes
 	mountpoint := ""
-	status := make(map[string]interface{})
+	var status map[string]interface{}
 	for _, vol := range vols {
 		local := d.volumes.ByName(vol.Name)
 		if(local != nil) {
