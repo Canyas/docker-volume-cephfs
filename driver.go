@@ -172,6 +172,23 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 									Mountpoint: mountpoint,
 									Status: status,
 								})
+		mountpoint = ""
+	}
+
+	status["location"] = "ceph+local"
+	for _, vol := range d.volumes {
+		if(vols.ByName(vol.Name) == nil) {
+			if(lib.IsDirectory(vol.Filesystem.Path)) {
+				mountpoint = vol.Filesystem.Path
+			}
+
+			vvols = append(vvols, &volume.Volume{
+										Name: vol.Name,
+										Mountpoint: mountpoint,
+										Status: status,
+									})
+			mountpoint = ""
+		}
 	}
 
 	return &volume.ListResponse {
