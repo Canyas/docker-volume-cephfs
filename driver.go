@@ -7,7 +7,6 @@ import (
 	"github.com/docker/go-plugins-helpers/volume"
 	"errors"
 	"os"
-	"log"
 )
 
 
