@@ -142,7 +142,7 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 		return nil, err
 	}
 
-	out, err := ShWithDefaultTimeout("ls", "-1")
+	out, err := ShWithDefaultTimeout("ls", "-1", fs.Path)
 	if(err != nil) {
 		err = InternalError(errors.New(UNABLE_GET_VOLUMES+out))
 		return nil, err
