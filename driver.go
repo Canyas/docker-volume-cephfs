@@ -156,7 +156,7 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	for _, vol := range vols {
 		vvols = append(vvols, &volume.Volume{
 									Name: vol.Name,
-									Mountpoint: vol.Filesystem.Path+vol.Subpath,
+									Mountpoint: vol.Filesystem.Path,
 									Status: nil,
 								})
 	}
@@ -185,9 +185,16 @@ func( d cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error) 
 		return nil, err
 	}
 
+	logrus.Info("Mounting volume ... "+ vol.Filesystem.Path)
+	err = vol.Mount(d.monitor, d.user, d.secretfile)
+	if(err != nil) {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
 	return &volume.GetResponse{Volume: &volume.Volume{
 		Name:       vol.Name,
-		Mountpoint: vol.Filesystem.Path+vol.Subpath,
+		Mountpoint: vol.Filesystem.Path,
 		Status:     make(map[string]interface{}),
 	}}, nil
 }
