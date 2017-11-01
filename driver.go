@@ -68,7 +68,7 @@ func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
 		cvol.Filesystem.Path = d.defaultPath
 	}
 	if(len(cvol.Subpath) == 0) {
-		cvol.Subpath = cvol.Name
+		cvol.Subpath = "/"+cvol.Name
 	}
 
 	logrus.Info("Checking filesystem ...")

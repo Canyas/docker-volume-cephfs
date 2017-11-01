@@ -46,6 +46,7 @@ func NewFilesystem(name 		string,
 		err = InternalError(errors.New(out))
 		return nil, err
 	}
+	logrus.Debug(out)
 
 	exists, err = fs.Exists()
 	if(err != nil) {
@@ -84,6 +85,7 @@ func (v Volume) Unmount() error {
 		err = InternalError(errors.New(out))
 		return err
 	}
+	logrus.Debug(out)
 	return nil
 }
 
