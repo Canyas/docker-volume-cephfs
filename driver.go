@@ -152,6 +152,7 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 		return nil, err
 	}
 	logrus.Debug(vols)
+	logrus.Debug(d.volumes)
 
 	logrus.Info("Converting volume list ...")
 	var vvols []*volume.Volume
@@ -159,9 +160,10 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	mountpoint := ""
 	status := make(map[string]interface{})
 	for _, vol := range vols {
-		if(d.volumes.ByName(vol.Name) != nil) {
-			if (lib.IsDirectory(vol.Filesystem.Path)) {
-				mountpoint = vol.Filesystem.Path
+		local := d.volumes.ByName(vol.Name)
+		if(local != nil) {
+			if (lib.IsDirectory(local.Filesystem.Path)) {
+				mountpoint = local.Filesystem.Path
 			}
 			status["location"] = "ceph+local"
 		} else {
