@@ -35,7 +35,7 @@ func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
 	logrus.Info("--- Create Called ", r.Name, " ", r.Options)
 	defer logrus.Info("--- Create End")
 
-	cvol := &lib.Volume{
+	cvol := lib.Volume{
 		Name:		r.Name,
 		Subpath:	"",
 	}
@@ -135,7 +135,7 @@ func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
 		return err
 	}
 
-	d.volumes = append(d.volumes, *cvol)
+	d.volumes = append(d.volumes, cvol)
 
 	return nil
 }
