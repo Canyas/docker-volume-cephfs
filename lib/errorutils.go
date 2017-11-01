@@ -16,6 +16,8 @@ const (
 	UNABLE_GET_VOLUMES = "Unable to list all volumes. Error: "
 	UNABLE_FIND_VOLUME = "Unable to find the volume. Name: "
 
+	VOLUME_NOT_MOUNTED = "Volume isn't mounted. Name: "
+
 	REQUEST_LIST_ERROR = "Unable to request ceph volumes: "
 	PROCESSING_LIST_ERROR = "Unable to convert output from command \"ceph fs ls\"."
 	REQUEST_POOLS_ERROR = "Unable to request ceph pools: "

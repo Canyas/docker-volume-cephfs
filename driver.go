@@ -12,7 +12,7 @@ import (
 
 type cephFSDriver struct { volume.Driver
 	defaultPath	string
-	volumes		map[string]*lib.Volume
+	volumes		lib.VolumeList
 	monitor 	string
 	user 		string
 	secretfile	string
@@ -135,6 +135,8 @@ func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
 		return err
 	}
 
+	d.volumes = append(d.volumes, *cvol)
+
 	return nil
 }
 
@@ -142,10 +144,8 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	logrus.Info("List Called ")
 	defer logrus.Info("List End")
 
-	logrus.Info("Getting volume list ....")
-	// Get volumes
 	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
-	if(err != nil) {
+	if (err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
 	}
@@ -153,11 +153,21 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	logrus.Info("Converting volume list ...")
 	var vvols []*volume.Volume
 	// Convert volumes
+	mountpoint := ""
+	status := make(map[string]interface{})
 	for _, vol := range vols {
+		if(d.volumes.ByName(vol.Name) != nil) {
+			if (lib.IsDirectory(vol.Filesystem.Path)) {
+				mountpoint = vol.Filesystem.Path
+			}
+			status["location"] = "ceph+local"
+		} else {
+			status["location"] = "ceph"
+		}
 		vvols = append(vvols, &volume.Volume{
 									Name: vol.Name,
-									Mountpoint: vol.Filesystem.Path,
-									Status: nil,
+									Mountpoint: mountpoint,
+									Status: status,
 								})
 	}
 
@@ -171,22 +181,17 @@ func( d cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error) 
 	logrus.Info("Get Called ", r.Name)
 	defer logrus.Info("Get End")
 
+	// Get volume by name
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
-	if(err != nil) {
-		logrus.Error(err.Error())
-		return nil, err
-	}
-
-	vol := vols.ByName(r.Name)
+	vol := d.volumes.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
+		err := errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
 
 	logrus.Info("Mounting volume ... "+ vol.Filesystem.Path)
-	err = vol.Mount(d.monitor, d.user, d.secretfile)
+	err := vol.Mount(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
@@ -222,22 +227,26 @@ func( d cephFSDriver ) Path( r *volume.PathRequest ) (*volume.PathResponse, erro
 	logrus.Info("Path Called ", r.Name)
 	defer logrus.Info("Path End")
 
+	// Get volume by name
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
-	if(err != nil) {
+	vol := d.volumes.ByName(r.Name)
+	if(vol == nil) {
+		err := errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
 
-	vol := vols.ByName(r.Name)
-	if(vol == nil) {
-		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
+	mountpoint := ""
+	if(lib.IsDirectory(vol.Filesystem.Path)) {
+		mountpoint = vol.Filesystem.Path
+	} else {
+		err := errors.New(lib.VOLUME_NOT_MOUNTED+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
 	
 	return &volume.PathResponse{
-		Mountpoint: vol.Filesystem.Path+vol.Subpath,
+		Mountpoint: mountpoint,
 	}, nil
 }
 
@@ -246,29 +255,24 @@ func (d cephFSDriver ) Mount( r *volume.MountRequest ) (*volume.MountResponse, e
 	logrus.Info("Mount Called ",r.ID," ", r.Name)
 	defer logrus.Info("Mount End")
 
+	// Get volume by name
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
-	if(err != nil) {
-		logrus.Error(err.Error())
-		return nil, err
-	}
-
-	vol := vols.ByName(r.Name)
+	vol := d.volumes.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
+		err := errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return nil, err
 	}
 
 	logrus.Info("Mounting ceph volume ...")
 	// Mount volume
-	err = vol.Mount(d.monitor, d.user, d.secretfile)
+	err := vol.Mount(d.monitor, d.user, d.secretfile)
 	if(err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
 	}
 
-	return &volume.MountResponse{ Mountpoint: vol.Filesystem.Path+vol.Subpath}, nil
+	return &volume.MountResponse{ Mountpoint: vol.Filesystem.Path}, nil
 }
 
 func (d cephFSDriver ) Unmount( r *volume.UnmountRequest ) error {
@@ -277,22 +281,16 @@ func (d cephFSDriver ) Unmount( r *volume.UnmountRequest ) error {
 
 	// Get volume by name
 	logrus.Info("Getting volume by name ...")
-	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
-	if(err != nil) {
-		logrus.Error(err.Error())
-		return err
-	}
-
-	vol := vols.ByName(r.Name)
+	vol := d.volumes.ByName(r.Name)
 	if(vol == nil) {
-		err = errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
+		err := errors.New(lib.UNABLE_FIND_VOLUME+r.Name)
 		logrus.Error(err.Error())
 		return err
 	}
 
 	logrus.Info("Unmount volume ...")
 	// Unmount volume
-	err = vol.Unmount()
+	err := vol.Unmount()
 	if (err != nil) {
 		logrus.Error(err.Error())
 		return err
