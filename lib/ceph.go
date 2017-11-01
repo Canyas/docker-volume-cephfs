@@ -113,6 +113,7 @@ func GetVolumes(monitor string, user string, secretfile string, path string) (Vo
 	if(err != nil) {
 		return nil, err
 	}
+	logrus.Debug(fss)
 
 	for _, fs := range fss {
 		vols_part, err := fs.GetVolumes(monitor, user, secretfile)
@@ -146,6 +147,7 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 		err = InternalError(errors.New(UNABLE_GET_VOLUMES+out))
 		return nil, err
 	}
+	logrus.Debug(out)
 
 	lines := strings.Split(out, "\n")
 	for _, line := range lines {
@@ -157,6 +159,7 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 			})
 		}
 	}
+	logrus.Debug(lines)
 
 	err = vol.Unmount()
 	if(err != nil) {
@@ -168,6 +171,7 @@ func (fs Filesystem) GetVolumes(monitor string, user string, secretfile string) 
 
 func (vols VolumeList) ByName(name string) *Volume {
 	for _, vol := range vols {
+		logrus.Debug(vol)
 		if(vol.Name == name) {
 			return &vol
 		}

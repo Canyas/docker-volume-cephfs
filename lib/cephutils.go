@@ -3,6 +3,7 @@ package lib
 import (
 	"strings"
 	"errors"
+	"github.com/Sirupsen/logrus"
 )
 
 func GetCephFilesystems(path string) ([]Filesystem, error) {
@@ -50,12 +51,14 @@ func GetCephPools() ([]string, error) {
 		err = errors.New(REQUEST_POOLS_ERROR+err.Error())
 		return nil, err
 	}
+	logrus.Debug(out)
 
 	pools := strings.Split(out, "\n")
 	if(len(pools) == 0) {
 		err = errors.New(PROCESSING_POOLS_ERROR)
 		return nil, err
 	}
+	logrus.Debug(pools)
 
 	return pools, nil
 }
