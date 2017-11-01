@@ -7,6 +7,7 @@ import (
 	"github.com/docker/go-plugins-helpers/volume"
 	"errors"
 	"os"
+	"log"
 )
 
 
@@ -144,11 +145,14 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	logrus.Info("List Called ")
 	defer logrus.Info("List End")
 
+	// Get volumes
+	logrus.Info("Getting all volumes ...")
 	vols, err := lib.GetVolumes(d.monitor, d.user, d.secretfile, d.defaultPath)
 	if (err != nil) {
 		logrus.Error(err.Error())
 		return nil, err
 	}
+	logrus.Debug(vols)
 
 	logrus.Info("Converting volume list ...")
 	var vvols []*volume.Volume
