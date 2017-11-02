@@ -158,28 +158,29 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	var vvols []*volume.Volume
 	// Convert volumes
 	mountpoint := ""
-	var status map[string]interface{}
+	status := ""
 	for _, vol := range vols {
 		local := d.volumes.ByName(vol.Name)
 		if(local != nil) {
 			if (lib.IsDirectory(local.Filesystem.Path)) {
 				mountpoint = local.Filesystem.Path
 			}
-			status["location"] = "ceph+local"
+			status = "ceph+local"
 		} else {
-			status["location"] = "ceph"
+			status = "ceph"
 		}
 		vvols = append(vvols, &volume.Volume{
 									Name: vol.Name,
 									Mountpoint: mountpoint,
-									Status: status,
+									Status: map[string]interface{}{"location":status},
 								})
 		mountpoint = ""
 	}
 
-	status["location"] = "ceph+local"
+	status = "ceph+local"
 	for _, vol := range d.volumes {
 		if(vols.ByName(vol.Name) == nil) {
+			status = "ceph+local"
 			if(lib.IsDirectory(vol.Filesystem.Path)) {
 				mountpoint = vol.Filesystem.Path
 			}
@@ -187,8 +188,20 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 			vvols = append(vvols, &volume.Volume{
 										Name: vol.Name,
 										Mountpoint: mountpoint,
-										Status: status,
+										Status: map[string]interface{}{"location":status},
 									})
+			mountpoint = ""
+		} else {
+			status = "local"
+
+			if(lib.IsDirectory(vol.Filesystem.Path)) {
+				mountpoint = vol.Filesystem.Path
+			}
+			vvols = append(vvols, &volume.Volume{
+				Name: vol.Name,
+				Mountpoint: mountpoint,
+				Status: map[string]interface{}{"location":status},
+			})
 			mountpoint = ""
 		}
 	}
