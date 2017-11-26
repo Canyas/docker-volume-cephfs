@@ -71,6 +71,18 @@ func (d *cephFSDriver ) Create( r *volume.CreateRequest ) error {
 		cvol.Subpath = "/"+cvol.Name
 	}
 
+	// Create path directory if needed
+	logrus.Info("Checking directories ...")
+	if(!lib.IsDirectory(cvol.Filesystem.Path)) {
+		logrus.Info("Creating new directory ...")
+		err := os.MkdirAll(cvol.Filesystem.Path, os.ModePerm)
+		if(err != nil) {
+			err = errors.New(lib.UNABLE_CREATE_DIR+err.Error())
+			logrus.Error(err.Error())
+			return err
+		}
+	}
+
 	logrus.Info("Checking filesystem ...")
 	exists, err := cvol.Filesystem.Exists()
 	if(err != nil) {
@@ -229,12 +241,12 @@ func( d *cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error)
 		return nil, err
 	}
 
-	logrus.Info("Mounting volume ... "+ vol.Filesystem.Path)
-	err := vol.Mount(d.monitor, d.user, d.secretfile)
-	if(err != nil) {
-		logrus.Error(err.Error())
-		return nil, err
-	}
+	///logrus.Info("Mounting volume ... "+ vol.Filesystem.Path)
+	///err := vol.Mount(d.monitor, d.user, d.secretfile)
+	///if(err != nil) {
+	///	logrus.Error(err.Error())
+	///	return nil, err
+	///}
 
 	return &volume.GetResponse{Volume: &volume.Volume{
 		Name:       vol.Name,
