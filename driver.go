@@ -12,7 +12,7 @@ import (
 
 type cephFSDriver struct { volume.Driver
 	defaultPath	string
-	volumes		lib.VolumeList
+	volumes		*lib.VolumeList
 	monitor 	string
 	user 		string
 	secretfile	string
@@ -31,7 +31,7 @@ func newCephFSDriver( defaultPath  string, monitor string, user string, secretfi
 	}, nil
 }
 
-func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
+func (d *cephFSDriver ) Create( r *volume.CreateRequest ) error {
 	logrus.Info("--- Create Called ", r.Name, " ", r.Options)
 	defer logrus.Info("--- Create End")
 
@@ -135,12 +135,12 @@ func (d cephFSDriver ) Create( r *volume.CreateRequest ) error {
 		return err
 	}
 
-	d.volumes = append(d.volumes, cvol)
+	*d.volumes = append(*d.volumes, cvol)
 
 	return nil
 }
 
-func( d cephFSDriver ) List() (*volume.ListResponse, error) {
+func( d *cephFSDriver ) List() (*volume.ListResponse, error) {
 	logrus.Info("List Called ")
 	defer logrus.Info("List End")
 
@@ -178,9 +178,9 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 	}
 
 	status = "ceph+local"
-	for _, vol := range d.volumes {
+	for _, vol := range *d.volumes {
 		if(vols.ByName(vol.Name) == nil) {
-			status = "ceph+local"
+			status = "local"
 			if(lib.IsDirectory(vol.Filesystem.Path)) {
 				mountpoint = vol.Filesystem.Path
 			}
@@ -192,7 +192,7 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 									})
 			mountpoint = ""
 		} else {
-			status = "local"
+			status = "ceph+local"
 
 			if(lib.IsDirectory(vol.Filesystem.Path)) {
 				mountpoint = vol.Filesystem.Path
@@ -206,13 +206,17 @@ func( d cephFSDriver ) List() (*volume.ListResponse, error) {
 		}
 	}
 
+	logrus.Debug(&volume.ListResponse {
+		Volumes: vvols,
+	})
+
 	return &volume.ListResponse {
 		Volumes: vvols,
 	}, nil
 }
 
 
-func( d cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error) {
+func( d *cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error) {
 	logrus.Info("Get Called ", r.Name)
 	defer logrus.Info("Get End")
 
@@ -239,7 +243,7 @@ func( d cephFSDriver ) Get( r *volume.GetRequest ) (*volume.GetResponse, error) 
 	}}, nil
 }
 
-func( d cephFSDriver ) Remove( r *volume.RemoveRequest ) error {
+func( d *cephFSDriver ) Remove( r *volume.RemoveRequest ) error {
 	logrus.Info("Remove Called ", r.Name)
 	defer logrus.Info("Remove End")
 
@@ -258,7 +262,7 @@ func( d cephFSDriver ) Remove( r *volume.RemoveRequest ) error {
 	return errors.New("error Remove NIJ")
 }
 
-func( d cephFSDriver ) Path( r *volume.PathRequest ) (*volume.PathResponse, error) {
+func( d *cephFSDriver ) Path( r *volume.PathRequest ) (*volume.PathResponse, error) {
 	logrus.Info("Path Called ", r.Name)
 	defer logrus.Info("Path End")
 
@@ -286,7 +290,7 @@ func( d cephFSDriver ) Path( r *volume.PathRequest ) (*volume.PathResponse, erro
 }
 
 
-func (d cephFSDriver ) Mount( r *volume.MountRequest ) (*volume.MountResponse, error) {
+func (d *cephFSDriver ) Mount( r *volume.MountRequest ) (*volume.MountResponse, error) {
 	logrus.Info("Mount Called ",r.ID," ", r.Name)
 	defer logrus.Info("Mount End")
 
@@ -310,7 +314,7 @@ func (d cephFSDriver ) Mount( r *volume.MountRequest ) (*volume.MountResponse, e
 	return &volume.MountResponse{ Mountpoint: vol.Filesystem.Path}, nil
 }
 
-func (d cephFSDriver ) Unmount( r *volume.UnmountRequest ) error {
+func (d *cephFSDriver ) Unmount( r *volume.UnmountRequest ) error {
 	logrus.Info("Unmount Called ", r.ID, " ", r.Name)
 	defer logrus.Info("Unmount End")
 
@@ -333,7 +337,7 @@ func (d cephFSDriver ) Unmount( r *volume.UnmountRequest ) error {
 
 	return nil
 }
-func (d cephFSDriver ) Capabilities() *volume.CapabilitiesResponse {
+func (d *cephFSDriver ) Capabilities() *volume.CapabilitiesResponse {
 	logrus.Info("Capabilities Called")
 	defer logrus.Info("Capabilities End")
 	
