@@ -12,7 +12,7 @@ import (
 
 type cephFSDriver struct { volume.Driver
 	defaultPath	string
-	volumes		*lib.VolumeList
+	volumes		lib.VolumeList
 	monitor 	string
 	user 		string
 	secretfile	string
@@ -127,15 +127,15 @@ func (d *cephFSDriver ) Create( r *volume.CreateRequest ) error {
 		return err
 	}
 
-	logrus.Info("Mounting volume ...")
+	///logrus.Info("Mounting volume ...")
 	// Mount Volume
-	err = cvol.Mount(d.monitor, d.user, d.secretfile)
-	if(err != nil) {
-		logrus.Error(err.Error())
-		return err
-	}
+	///err = cvol.Mount(d.monitor, d.user, d.secretfile)
+	///if(err != nil) {
+	///	logrus.Error(err.Error())
+	///	return err
+	///}
 
-	*d.volumes = append(*d.volumes, cvol)
+	d.volumes = append(d.volumes, cvol)
 
 	return nil
 }
@@ -178,7 +178,7 @@ func( d *cephFSDriver ) List() (*volume.ListResponse, error) {
 	}
 
 	status = "ceph+local"
-	for _, vol := range *d.volumes {
+	for _, vol := range d.volumes {
 		if(vols.ByName(vol.Name) == nil) {
 			status = "local"
 			if(lib.IsDirectory(vol.Filesystem.Path)) {

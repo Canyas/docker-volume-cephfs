@@ -57,7 +57,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	h := volume.NewHandler(driver)
+	h := volume.NewHandler(&driver)
 
 	fmt.Printf("Listening on %s\n", socketAddress)
 	fmt.Println(h.ServeUnix(socketAddress, 1))
