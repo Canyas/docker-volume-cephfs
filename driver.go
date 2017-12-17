@@ -7,6 +7,7 @@ import (
 	"github.com/docker/go-plugins-helpers/volume"
 	"errors"
 	"os"
+	"strings"
 )
 
 
@@ -64,11 +65,13 @@ func (d *cephFSDriver ) Create( r *volume.CreateRequest ) error {
 	}
 
 	// Process empty options
-	if(len(cvol.Filesystem.Path) == 0) {
-		cvol.Filesystem.Path = d.defaultPath
-	}
 	if(len(cvol.Subpath) == 0) {
 		cvol.Subpath = "/"+cvol.Name
+	} else if(strings.Index(cvol.Subpath, "/") > 0) {
+		cvol.Subpath = "/"+cvol.Subpath
+	}
+	if(len(cvol.Filesystem.Path) == 0) {
+		cvol.Filesystem.Path = d.defaultPath+cvol.Subpath
 	}
 
 	// Create path directory if needed
