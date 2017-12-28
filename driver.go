@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"path"
 )
 
 
@@ -23,13 +24,42 @@ type cephFSDriver struct { volume.Driver
 
  */
 func newCephFSDriver( defaultPath  string, monitor string, user string, secretfile string) (cephFSDriver, error) {
-	return cephFSDriver{
+	d := cephFSDriver{
 		defaultPath: defaultPath,
-		volumes:	nil,
-		monitor: 	monitor,
-		user: 		user,
-		secretfile: secretfile,
-	}, nil
+		volumes:     nil,
+		monitor:     monitor,
+		user:        user,
+		secretfile:  secretfile,
+	}
+
+	filesystems, err := lib.GetCephFilesystems(path.Join(defaultPath, "tmp"))
+
+	if(err != nil) {
+		return cephFSDriver{}, errors.New(lib.REQUEST_FILESYSTEM_ERROR+err.Error())
+	}
+
+	for _, fs := range filesystems {
+
+		fs.Path = path.Join(defaultPath, "tmp")
+
+		vols, err := fs.GetVolumes(monitor, user, secretfile)
+
+		if (err != nil) {
+			return cephFSDriver{}, errors.New(lib.UNABLE_GET_VOLUMES + err.Error())
+		}
+
+		for _, vol := range vols {
+			if (lib.IsDirectory(path.Join(defaultPath, vol.Name))) {
+				vol.Filesystem = fs
+				vol.Filesystem.Path = path.Join(defaultPath, vol.Name)
+
+				d.volumes = append(d.volumes, vol)
+			}
+		}
+
+	}
+
+	return d, nil
 }
 
 func (d *cephFSDriver ) Create( r *volume.CreateRequest ) error {
