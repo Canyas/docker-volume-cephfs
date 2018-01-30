@@ -66,7 +66,7 @@ func ( v Volume) GetAbsolutePathForVolume() string {
 
 func (v Volume) Mount(monitor string, user string, secretfile string) error {
 	out, err := ShWithDefaultTimeout("mount", "-t",
-																"ceph",
+																"ceph-fuse",
 																monitor+":"+v.Subpath,
 																v.Filesystem.Path,
 																"-o",
